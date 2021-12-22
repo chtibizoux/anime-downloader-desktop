@@ -20,11 +20,14 @@
     "anime"
   ],
   "build": {
-    "allowToChangeInstallationDirectory": true,
     "appId": "fr.chtibizoux.animedownloader",
     "productName": "Anime Donwloader",
     "win": {
       "icon": "./images/icon.jpg"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
     },
     "directories": {
       "buildResources": "public"
