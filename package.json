@@ -20,6 +20,7 @@
     "anime"
   ],
   "build": {
+    "allowToChangeInstallationDirectory": true,
     "appId": "fr.chtibizoux.animedownloader",
     "productName": "Anime Donwloader",
     "win": {
