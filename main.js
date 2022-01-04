@@ -43,13 +43,6 @@ function ipcEvents(win) {
         shell.openPath(app.getAppPath() + "/Downloads/")
     });
     ipcMain.on("download", async (event, episodes, animeName, selectPath) => {
-        downloads.push({
-            name: animeName,
-            episodes: episodes,
-            active: episodes[0],
-            progress: 0,
-        });
-        win.webContents.send("downloads", downloads);
         var path = app.getAppPath() + "/Downloads/" + animeName.split("/").join("_") + "/";
         if (selectPath) {
             const result = await dialog.showOpenDialog(win, {
@@ -59,6 +52,14 @@ function ipcEvents(win) {
                 path = result.filePaths[0];
             }
         }
+        downloads.push({
+            name: animeName,
+            episodes: episodes,
+            active: episodes[0],
+            path: path,
+            progress: 0,
+        });
+        win.webContents.send("downloads", downloads);
         for (const i in episodes) {
             if (episodes[i]["url"]) {
                 if (episodes[i]["url"].includes("player/embed_player.php")) {
@@ -117,7 +118,7 @@ function ipcEvents(win) {
                     if (downloads[i].name === animeName) {
                         for (const y in downloads[i].episodes) {
                             if (episode.id === downloads[i].episodes[y].id) {
-                                downloads[i].episodes.splice(y, 1);
+                                downloads[i].episodes[y].downloaded = true;
                                 win.webContents.send("downloads", downloads);
                             }
                         }
