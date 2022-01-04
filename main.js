@@ -42,6 +42,9 @@ function ipcEvents(win) {
         win.webContents.send("downloads", downloads);
         shell.openPath(app.getAppPath() + "/Downloads/")
     });
+    ipcMain.on("animeClick", async (event, path) => {
+        shell.openPath(path)
+    });
     ipcMain.on("download", async (event, episodes, animeName, selectPath) => {
         var path = app.getAppPath() + "/Downloads/" + animeName.split("/").join("_") + "/";
         if (selectPath) {
