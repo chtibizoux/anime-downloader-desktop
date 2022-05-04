@@ -27,9 +27,9 @@ const createWindow = () => {
         }
     });
     win.maximize();
-    session.defaultSession.cookies.set({ url: 'http://anime.clementsongis.cf', name: 'application', value: 'true' }).then(() => {
-        session.defaultSession.cookies.set({ url: 'http://anime.clementsongis.cf', name: 'id', value: config.id }).then(() => {
-            win.loadURL('https://anime.clementsongis.cf/');
+    session.defaultSession.cookies.set({ url: 'http://animedownloader.cf', name: 'application', value: 'true' }).then(() => {
+        session.defaultSession.cookies.set({ url: 'http://animedownloader.cf', name: 'id', value: config.id }).then(() => {
+            win.loadURL('https://animedownloader.cf/');
         });
     });
     ipcEvents(win);
@@ -38,13 +38,16 @@ function ipcEvents(win) {
     ipcMain.on("getdownload", async (event) => {
         win.webContents.send("downloads", downloads);
     });
+    
     ipcMain.on("downloaded", async (event) => {
         win.webContents.send("downloads", downloads);
         shell.openPath(app.getAppPath() + "/Downloads/")
     });
+
     ipcMain.on("animeClick", async (event, path) => {
         shell.openPath(path)
     });
+
     ipcMain.on("download", async (event, episodes, animeName, selectPath) => {
         var path = app.getAppPath() + "/Downloads/" + animeName.split("/").join("_") + "/";
         if (selectPath) {
