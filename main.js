@@ -1,18 +1,15 @@
 const { shell, session, dialog, app, BrowserWindow, ipcMain } = require('electron');
-const fetch = require('node-fetch');
 const fs = require('fs');
-const download = require('./download');
-
+const DownloadService = require('./download');
 if (!fs.existsSync('./config.json')) {
     var id = "";
-    var letters = "1234567890";
+    var letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRstUVWXYZ1234567890";
     for (let i = 0; i < 20; i++) {
         id += letters[Math.floor(Math.random() * (letters.length - 1))];
     }
     fs.writeFileSync('./config.json', '{ "id": "' + id + '" }');
 }
 const config = require('./config.json');
-var downloads = [];
 
 const createWindow = () => {
     const win = new BrowserWindow({
@@ -35,8 +32,18 @@ const createWindow = () => {
     ipcEvents(win);
 }
 function ipcEvents(win) {
+    function callback() {
+        win.setProgressBar(download.downloads[0].progress);
+        win.webContents.send("downloads", download.downloads);
+    }
+    function downloaded(episode) {
+        win.setProgressBar(0);
+        win.webContents.send("downloaded", episode);
+    }
+    const download = new DownloadService(BrowserWindow, callback, downloaded);
+    
     ipcMain.on("getdownload", async (event) => {
-        win.webContents.send("downloads", downloads);
+        win.webContents.send("downloads", download.downloads);
     });
     
     ipcMain.on("downloaded", async (event) => {
@@ -58,88 +65,8 @@ function ipcEvents(win) {
                 path = result.filePaths[0];
             }
         }
-        downloads.push({
-            name: animeName,
-            episodes: episodes,
-            active: episodes[0],
-            path: path,
-            progress: 0,
-        });
-        win.webContents.send("downloads", downloads);
-        for (const i in episodes) {
-            if (episodes[i]["url"]) {
-                if (episodes[i]["url"].includes("player/embed_player.php")) {
-                    try {
-                        episodes[i]["file"] = await download.getUniversLink(episodes[i]["url"], BrowserWindow);
-                        console.log(episodes[i]["file"]);
-                    } catch (e) {
-                        console.log(e);
-                    }
-                }
-            }
-        }
-        for (const episode of episodes) {
-            if (episode["url"]) {
-                for (const i in downloads) {
-                    if (downloads[i].name === animeName) {
-                        downloads[i].active = episode;
-                    }
-                }
-                if (episode["url"].includes("/v/")) {
-                    try {
-                        await download.downloadMav(episode["url"], episode["name"], path, (total, position) => {
-                            win.setProgressBar(position / total);
-                            for (const i in downloads) {
-                                if (downloads[i].name === animeName) {
-                                    downloads[i].progress = position / total;
-                                    win.webContents.send("downloads", downloads);
-                                }
-                            }
-                        });
-                    } catch (e) {
-                        console.log(e);
-                    }
-                    win.setProgressBar(0);
-                    console.log(path);
-                } else if (episode["url"].includes("player/embed_player.php") && episode["file"]) {
-                    try {
-                        await download.downloadUnivers(episode["file"], episode["name"], path, (total, position) => {
-                            win.setProgressBar(position / total);
-                            for (const i in downloads) {
-                                if (downloads[i].name === animeName) {
-                                    downloads[i].progress = position / total;
-                                    win.webContents.send("downloads", downloads);
-                                }
-                            }
-                        });
-                    } catch (e) {
-                        console.log(e);
-                    }
-                    win.setProgressBar(0);
-                    console.log(path);
-                } else {
-                    console.log("no url: " + episode.name);
-                }
-                for (const i in downloads) {
-                    if (downloads[i].name === animeName) {
-                        for (const y in downloads[i].episodes) {
-                            if (episode.id === downloads[i].episodes[y].id) {
-                                downloads[i].episodes[y].downloaded = true;
-                                win.webContents.send("downloads", downloads);
-                            }
-                        }
-                    }
-                }
-            } else {
-                console.log("no url: " + episode.name);
-            }
-        }
-        for (const i in downloads) {
-            if (downloads[i].name === animeName) {
-                downloads.splice(i, 1);
-                win.webContents.send("downloads", downloads);
-            }
-        }
+        download.addDownloads(episodes, path);
+        win.webContents.send("downloads", download.downloads);
     });
 }
 app.whenReady().then(() => {
