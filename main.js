@@ -14,15 +14,15 @@ autoUpdater.on('error', message => {
     console.error(message);
 });
 
-if (!fs.existsSync('./config.json')) {
+if (!fs.existsSync(__dirname + '/config.json')) {
     var id = "";
     var letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRstUVWXYZ1234567890";
     for (let i = 0; i < 20; i++) {
         id += letters[Math.floor(Math.random() * (letters.length - 1))];
     }
-    fs.writeFileSync('./config.json', '{ "id": "' + id + '" }');
+    fs.writeFileSync(__dirname + '/config.json', '{ "id": "' + id + '" }');
 }
-const config = JSON.parse(fs.readFileSync('./config.json'));
+const config = JSON.parse(fs.readFileSync(__dirname + '/config.json'));
 
 const createWindow = async () => {
     await session.defaultSession.cookies.set({ url: BASE_URL, name: 'application', value: 'true' });
@@ -94,7 +94,15 @@ function ipcEvents(win) {
 }
 app.whenReady().then(() => {
     createWindow();
+    app.on('activate', () => {
+        if (BrowserWindow.getAllWindows().length === 0) {
+            createWindow();
+        }
+    });
 });
+
 app.on('window-all-closed', () => {
-    app.quit();
+    if (process.platform !== 'darwin') {
+        app.quit();
+    }
 });
