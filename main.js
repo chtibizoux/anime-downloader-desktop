@@ -1,7 +1,6 @@
 const { shell, session, dialog, app, BrowserWindow, ipcMain } = require("electron");
 const { autoUpdater } = require("electron-updater")
 const fs = require('fs');
-const fetch = require('node-fetch');
 const DownloadService = require('./download');
 
 const BASE_URL = 'https://animedownloader.cf';
