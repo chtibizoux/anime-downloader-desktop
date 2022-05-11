@@ -1,17 +1,46 @@
-const { shell, session, dialog, app, BrowserWindow, ipcMain } = require('electron');
-const fs = require('fs');
-const DownloadService = require('./download');
-if (!fs.existsSync('./config.json')) {
+import { shell, session, autoUpdater, dialog, app, BrowserWindow, ipcMain } from 'electron';
+import { existsSync, writeFileSync } from 'fs';
+import DownloadService from './download';
+
+const server = 'https://animedownloader.cf';
+const url = `${server}/update/${process.platform}/${app.getVersion()}`;
+autoUpdater.setFeedURL({ url });
+setInterval(() => {
+    autoUpdater.checkForUpdates();
+}, 60000);
+
+autoUpdater.on('update-downloaded', (event, releaseNotes, releaseName) => {
+    const dialogOpts = {
+        type: 'info',
+        buttons: ['Redémarer', 'Plus tard'],
+        title: 'Application Update',
+        message: process.platform === 'win32' ? releaseNotes : releaseName,
+        detail: "Une nouvelle version à été télécharger. Redémarer l'application pour appliquer la mise à jour."
+    }
+
+    dialog.showMessageBox(dialogOpts).then((returnValue) => {
+        if (returnValue.response === 0) autoUpdater.quitAndInstall();
+    });
+});
+
+autoUpdater.on('error', message => {
+    console.error('There was a problem updating the application');
+    console.error(message);
+});
+
+if (!existsSync('./config.json')) {
     var id = "";
     var letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRstUVWXYZ1234567890";
     for (let i = 0; i < 20; i++) {
         id += letters[Math.floor(Math.random() * (letters.length - 1))];
     }
-    fs.writeFileSync('./config.json', '{ "id": "' + id + '" }');
+    writeFileSync('./config.json', '{ "id": "' + id + '" }');
 }
-const config = require('./config.json');
+import { id as _id } from './config.json';
 
-const createWindow = () => {
+const createWindow = async () => {
+    await session.defaultSession.cookies.set({ url: 'http://animedownloader.cf', name: 'application', value: 'true' });
+    await session.defaultSession.cookies.set({ url: 'http://animedownloader.cf', name: 'id', value: _id });
     const win = new BrowserWindow({
         title: "Anime Downloader",
         icon: __dirname + "/images/icon.jpg",
@@ -23,12 +52,9 @@ const createWindow = () => {
             nodeIntegration: true
         }
     });
+    win.loadURL('https://animedownloader.cf/');
     win.maximize();
-    session.defaultSession.cookies.set({ url: 'http://animedownloader.cf', name: 'application', value: 'true' }).then(() => {
-        session.defaultSession.cookies.set({ url: 'http://animedownloader.cf', name: 'id', value: config.id }).then(() => {
-            win.loadURL('https://animedownloader.cf/');
-        });
-    });
+    
     ipcEvents(win);
 }
 function ipcEvents(win) {
@@ -41,18 +67,17 @@ function ipcEvents(win) {
         win.webContents.send("downloaded", episode);
     }
     const download = new DownloadService(BrowserWindow, callback, downloaded);
-    
-    ipcMain.on("getdownload", async (event) => {
+
+    ipcMain.on("getdownload", (event) => {
         win.webContents.send("downloads", download.downloads);
     });
     
-    ipcMain.on("downloaded", async (event) => {
-        win.webContents.send("downloads", downloads);
-        shell.openPath(app.getAppPath() + "/Downloads/")
+    ipcMain.on("downloaded", (event) => {
+        shell.openPath(app.getAppPath() + "/Downloads/");
     });
 
-    ipcMain.on("animeClick", async (event, path) => {
-        shell.openPath(path)
+    ipcMain.on("episodeClick", (event, path) => {
+        shell.openPath(path);
     });
 
     ipcMain.on("download", async (event, episodes, animeName, selectPath) => {
