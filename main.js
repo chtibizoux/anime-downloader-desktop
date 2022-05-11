@@ -1,6 +1,6 @@
-import { shell, session, autoUpdater, dialog, app, BrowserWindow, ipcMain } from 'electron';
-import { existsSync, writeFileSync } from 'fs';
-import DownloadService from './download';
+const { shell, session, autoUpdater, dialog, app, BrowserWindow, ipcMain } = require("electron");
+const fs = require('fs');
+const DownloadService = require('./download');
 
 const server = 'https://animedownloader.cf';
 const url = `${server}/update/${process.platform}/${app.getVersion()}`;
@@ -28,19 +28,19 @@ autoUpdater.on('error', message => {
     console.error(message);
 });
 
-if (!existsSync('./config.json')) {
+if (!fs.existsSync('./config.json')) {
     var id = "";
     var letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRstUVWXYZ1234567890";
     for (let i = 0; i < 20; i++) {
         id += letters[Math.floor(Math.random() * (letters.length - 1))];
     }
-    writeFileSync('./config.json', '{ "id": "' + id + '" }');
+    fs.writeFileSync('./config.json', '{ "id": "' + id + '" }');
 }
-import { id as _id } from './config.json';
+const config = require('./config.json');
 
 const createWindow = async () => {
-    await session.defaultSession.cookies.set({ url: 'http://animedownloader.cf', name: 'application', value: 'true' });
-    await session.defaultSession.cookies.set({ url: 'http://animedownloader.cf', name: 'id', value: _id });
+    await session.defaultSession.cookies.set({ url: server, name: 'application', value: 'true' });
+    await session.defaultSession.cookies.set({ url: server, name: 'id', value: config.id });
     const win = new BrowserWindow({
         title: "Anime Downloader",
         icon: __dirname + "/images/icon.jpg",
@@ -52,7 +52,7 @@ const createWindow = async () => {
             nodeIntegration: true
         }
     });
-    win.loadURL('https://animedownloader.cf/');
+    win.loadURL(server);
     win.maximize();
     
     ipcEvents(win);
