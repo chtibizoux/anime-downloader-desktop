@@ -1,9 +1,14 @@
 {
   "name": "anime_download-electron",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "description": "A windows app to download animes",
   "main": "main.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chtibizoux/anime-downloader-desktop.git"
+  },
   "dependencies": {
+    "electron-updater": "^5.0.1",
     "node-fetch": "^2.6.1"
   },
   "devDependencies": {
@@ -13,21 +18,32 @@
   "scripts": {
     "start": "electron .",
     "pack": "electron-builder --dir",
-    "dist": "electron-builder"
+    "dist": "electron-builder",
+    "publish": "electron-builder --win -p always"
   },
   "keywords": [
     "download",
     "anime"
   ],
+  "publish": {
+    "provider": "github",
+    "releaseType": "release"
+  },
   "build": {
-    "appId": "fr.chtibizoux.animedownloader",
+    "appId": "com.chtibizoux.animedownloader",
     "productName": "Anime Donwloader",
     "win": {
-      "icon": "./images/icon.jpg"
+      "icon": "./images/icon.jpg",
+      "publish": ["github"]
+    },
+    "mac": {
+      "category": "public.app-category.productivity"
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": true,
+      "deleteAppDataOnUninstall": false
     },
     "directories": {
       "buildResources": "public"
