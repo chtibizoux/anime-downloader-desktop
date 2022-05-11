@@ -30,6 +30,7 @@
     "releaseType": "release"
   },
   "build": {
+    "files": "!config.json",
     "appId": "com.chtibizoux.animedownloader",
     "productName": "Anime Donwloader",
     "win": {

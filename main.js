@@ -22,7 +22,7 @@ if (!fs.existsSync('./config.json')) {
     }
     fs.writeFileSync('./config.json', '{ "id": "' + id + '" }');
 }
-const config = require('./config.json');
+const config = JSON.parse(fs.readFileSync('./config.json'));
 
 const createWindow = async () => {
     await session.defaultSession.cookies.set({ url: BASE_URL, name: 'application', value: 'true' });
@@ -44,14 +44,16 @@ const createWindow = async () => {
 }
 function ipcEvents(win) {
     function callback() {
-        win.setProgressBar(download.downloads[0].progress);
+        if (download.downloads[0].progress) {
+            win.setProgressBar(download.downloads[0].progress);
+        }
         win.webContents.send("downloads", download.downloads);
     }
     function downloaded(episode) {
-        win.setProgressBar(0);
+        win.setProgressBar(-1);
         win.webContents.send("downloaded", episode);
     }
-    const download = new DownloadService(BrowserWindow, callback, downloaded);
+    const download = new DownloadService(BrowserWindow, callback, downloaded, BASE_URL);
 
     autoUpdater.on('update-available', (event) => {
         win.webContents.send("newVersion");
