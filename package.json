@@ -1,6 +1,6 @@
 {
   "name": "anime_download-electron",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "A windows app to download animes",
   "main": "main.js",
   "repository": {
