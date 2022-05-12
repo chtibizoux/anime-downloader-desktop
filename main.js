@@ -9,9 +9,11 @@ autoUpdater.autoDownload = false;
 var x = setInterval(() => {
     autoUpdater.checkForUpdates();
 }, 60000);
+
 autoUpdater.on('update-downloaded', (event) => {
     autoUpdater.quitAndInstall();
 });
+
 autoUpdater.on('error', message => {
     console.error('There was a problem updating the application');
     console.error(message);
@@ -66,17 +68,24 @@ function ipcEvents(win) {
         win.webContents.send("newVersion");
     });
 
+    autoUpdater.on('download-progress', (progressObj) => {
+        win.setProgressBar(progressObj.percent / 100);
+    });
+
     ipcMain.on("downloadNewVersion", (event) => {
         autoUpdater.downloadUpdate();
     });
 
     ipcMain.on("getdownload", (event) => {
         win.webContents.send("downloads", download.downloads);
+        autoUpdater.checkForUpdates();
     });
     
     ipcMain.on("downloaded", (event) => {
+        if (!fs.existsSync(app.getPath("documents") + "/Anime Downloader/")) {
+            fs.mkdirSync(app.getPath("documents") + "/Anime Downloader/", { recursive: true });
+        }
         shell.openPath(app.getPath("documents") + "/Anime Downloader/");
-        autoUpdater.checkForUpdates();
     });
 
     ipcMain.on("episodeClick", (event, path) => {
