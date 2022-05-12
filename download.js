@@ -89,6 +89,7 @@ class DownloadService {
                 episode.path = path;
                 this.downloaded(episode);
                 this.downloads.splice(0, 1);
+                this.callback();
                 if (this.downloads.length > 0) {
                     this.download();
                 } else {
