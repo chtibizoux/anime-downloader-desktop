@@ -1,5 +1,5 @@
 {
-  "name": "anime_download-electron",
+  "name": "anime-downloader-electron",
   "version": "1.0.4",
   "description": "A windows app to download animes",
   "main": "main.js",

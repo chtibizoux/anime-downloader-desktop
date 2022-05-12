@@ -44,7 +44,7 @@ class DownloadService {
         try {
             var episode = this.downloads[0];
             
-            var path = `${episode.directory}/${episode.name.replace(/[\/\\:?*<>|"]/g, " ")}.mp4`;
+            var path = `${episode.directory}/${this.parseFileName(episode.name)}.mp4`;
             var url = `https://animedownloader.cf/api/download/?url=${episode.link}`;
             if (episode.download_link) {
                 url = `https://animedownloader.cf/api/download/?url=${episode.download_link}&type=hqq`;
@@ -142,6 +142,10 @@ class DownloadService {
         } catch (e) {
             console.log(e);
         }
+    }
+
+    parseFileName(name) {
+        return name.replace(/[\/\\:?*<>|\."]/g, " ");
     }
 }
 module.exports = DownloadService;

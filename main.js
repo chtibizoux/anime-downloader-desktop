@@ -6,6 +6,9 @@ const DownloadService = require('./download');
 const BASE_URL = 'https://animedownloader.cf';
 
 autoUpdater.autoDownload = false;
+var x = setInterval(() => {
+    autoUpdater.checkForUpdates();
+}, 60000);
 autoUpdater.on('update-downloaded', (event) => {
     autoUpdater.quitAndInstall();
 });
@@ -14,17 +17,20 @@ autoUpdater.on('error', message => {
     console.error(message);
 });
 
-if (!fs.existsSync(__dirname + '/config.json')) {
+if (!fs.existsSync(app.getPath("userData") + '/config.json')) {
     var id = "";
     var letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRstUVWXYZ1234567890";
     for (let i = 0; i < 20; i++) {
         id += letters[Math.floor(Math.random() * (letters.length - 1))];
     }
-    fs.writeFileSync(__dirname + '/config.json', '{ "id": "' + id + '" }');
+    fs.writeFileSync(app.getPath("userData") + '/config.json', '{ "id": "' + id + '" }');
 }
-const config = JSON.parse(fs.readFileSync(__dirname + '/config.json'));
+const config = JSON.parse(fs.readFileSync(app.getPath("userData") + '/config.json'));
 
 const createWindow = async () => {
+    if (config.adminToken) {
+        await session.defaultSession.cookies.set({ url: BASE_URL, name: 'admin_token', value: config.adminToken });
+    }
     await session.defaultSession.cookies.set({ url: BASE_URL, name: 'application', value: 'true' });
     await session.defaultSession.cookies.set({ url: BASE_URL, name: 'id', value: config.id });
     const win = new BrowserWindow({
@@ -42,6 +48,7 @@ const createWindow = async () => {
     win.maximize();
     ipcEvents(win);
 }
+
 function ipcEvents(win) {
     function callback() {
         if (download.downloads[0].progress) {
@@ -68,20 +75,20 @@ function ipcEvents(win) {
     });
     
     ipcMain.on("downloaded", (event) => {
-        shell.openPath(app.getAppPath() + "/Downloads/");
+        shell.openPath(app.getPath("documents") + "/Anime Downloader/");
         autoUpdater.checkForUpdates();
-        setInterval(() => {
-            autoUpdater.checkForUpdates();
-        }, 60000);
     });
 
     ipcMain.on("episodeClick", (event, path) => {
         shell.openPath(path);
     });
     ipcMain.on("download", async (event, episodes, animeName, selectPath) => {
-        var path = app.getAppPath() + "/Downloads/" + animeName.split("/").join("_") + "/";
+        var path = app.getPath("documents") + "/Anime Downloader/" + download.parseFileName(animeName) + "/";
         if (selectPath) {
             const result = await dialog.showOpenDialog(win, {
+                // title: "Dossier de téléchargement",
+                // defaultPath: app.getPath("documents"),
+                // buttonLabel: "Télécharger",
                 properties: ['openDirectory']
             });
             if (result.filePaths[0]) {
@@ -103,6 +110,7 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
+        clearInterval(x);
         app.quit();
     }
 });
