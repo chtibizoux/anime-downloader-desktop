@@ -76,6 +76,38 @@ function ipcEvents(win) {
         autoUpdater.downloadUpdate();
     });
 
+    ipcMain.handle("getthumbnail", async (event, link) => {
+        var win = new BrowserWindow({
+            title: "Get thumbnail",
+            icon: __dirname + "/images/icon.jpg",
+            autoHideMenuBar: true,
+            width: 960,
+            height: 540,
+            frame: false
+        });
+        win.loadURL(link);
+        var thumbnail = "";
+        try {
+            var thumbnail = await new Promise((resolve, reject) => {
+                win.webContents.on('dom-ready', () => {
+                    win.webContents.executeJavaScript(`document.querySelector("video") ? document.querySelector("video").poster : document.querySelector('meta[property="og:image"]').content`).then((url) => {
+                        resolve(url);
+                        win.close();
+                    }).catch((e) => {
+                        console.log(e);
+                        win.close();
+                    });
+                });
+                win.on('close', () => {
+                    reject("Page Closed");
+                });
+            });
+        } catch (e) {
+            console.log(e);
+        }
+        return thumbnail;
+    });
+
     ipcMain.on("getdownload", (event) => {
         win.webContents.send("downloads", download.downloads);
         autoUpdater.checkForUpdates();
