@@ -39,7 +39,9 @@
     "productName": "Anime Donwloader",
     "win": {
       "icon": "./images/icon.jpg",
-      "publish": ["github"]
+      "publish": [
+        "github"
+      ]
     },
     "mac": {
       "category": "public.app-category.productivity"

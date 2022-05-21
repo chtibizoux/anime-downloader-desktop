@@ -2,6 +2,7 @@ const { shell, session, dialog, app, BrowserWindow, ipcMain } = require("electro
 const { autoUpdater } = require("electron-updater")
 const fs = require('fs');
 const DownloadService = require('./download');
+// const { setup: setupPushReceiver } = require('electron-push-receiver');
 
 const BASE_URL = 'https://animedownloader.cf';
 
@@ -46,6 +47,7 @@ const createWindow = async () => {
             nodeIntegration: true
         }
     });
+    // setupPushReceiver(win.webContents);
     win.loadURL(BASE_URL);
     win.maximize();
     ipcEvents(win);
@@ -66,6 +68,7 @@ function ipcEvents(win) {
 
     autoUpdater.on('update-available', (event) => {
         win.webContents.send("newVersion");
+
     });
 
     autoUpdater.on('download-progress', (progressObj) => {
@@ -74,6 +77,39 @@ function ipcEvents(win) {
 
     ipcMain.on("downloadNewVersion", (event) => {
         autoUpdater.downloadUpdate();
+    });
+
+    ipcMain.on("getdownload", (event) => {
+        win.webContents.send("downloads", download.downloads);
+        autoUpdater.checkForUpdates();
+    });
+    
+    ipcMain.on("downloaded", (event) => {
+        if (!fs.existsSync(app.getPath("documents") + "/Anime Downloader/")) {
+            fs.mkdirSync(app.getPath("documents") + "/Anime Downloader/", { recursive: true });
+        }
+        shell.openPath(app.getPath("documents") + "/Anime Downloader/");
+    });
+
+    ipcMain.on("episodeClick", (event, path) => {
+        shell.openPath(path);
+    });
+
+    ipcMain.on("download", async (event, episodes, animeName, selectPath) => {
+        var path = app.getPath("documents") + "/Anime Downloader/" + download.parseFileName(animeName) + "/";
+        if (selectPath) {
+            const result = await dialog.showOpenDialog(win, {
+                // title: "Dossier de téléchargement",
+                // defaultPath: app.getPath("documents"),
+                // buttonLabel: "Télécharger",
+                properties: ['openDirectory']
+            });
+            if (result.filePaths[0]) {
+                path = result.filePaths[0];
+            }
+        }
+        download.addDownloads(episodes, path);
+        win.webContents.send("downloads", download.downloads);
     });
 
     ipcMain.handle("getthumbnail", async (event, link) => {
@@ -106,38 +142,6 @@ function ipcEvents(win) {
             console.log(e);
         }
         return thumbnail;
-    });
-
-    ipcMain.on("getdownload", (event) => {
-        win.webContents.send("downloads", download.downloads);
-        autoUpdater.checkForUpdates();
-    });
-    
-    ipcMain.on("downloaded", (event) => {
-        if (!fs.existsSync(app.getPath("documents") + "/Anime Downloader/")) {
-            fs.mkdirSync(app.getPath("documents") + "/Anime Downloader/", { recursive: true });
-        }
-        shell.openPath(app.getPath("documents") + "/Anime Downloader/");
-    });
-
-    ipcMain.on("episodeClick", (event, path) => {
-        shell.openPath(path);
-    });
-    ipcMain.on("download", async (event, episodes, animeName, selectPath) => {
-        var path = app.getPath("documents") + "/Anime Downloader/" + download.parseFileName(animeName) + "/";
-        if (selectPath) {
-            const result = await dialog.showOpenDialog(win, {
-                // title: "Dossier de téléchargement",
-                // defaultPath: app.getPath("documents"),
-                // buttonLabel: "Télécharger",
-                properties: ['openDirectory']
-            });
-            if (result.filePaths[0]) {
-                path = result.filePaths[0];
-            }
-        }
-        download.addDownloads(episodes, path);
-        win.webContents.send("downloads", download.downloads);
     });
 }
 app.whenReady().then(() => {
