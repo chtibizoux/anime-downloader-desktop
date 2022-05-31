@@ -1,10 +1,12 @@
-const { shell, session, dialog, app, BrowserWindow, ipcMain } = require("electron");
+const { shell, session, Notification, dialog, app, BrowserWindow, ipcMain } = require("electron");
 const { autoUpdater } = require("electron-updater")
 const fs = require('fs');
 const DownloadService = require('./download');
 // const { setup: setupPushReceiver } = require('electron-push-receiver');
 
 const BASE_URL = 'https://animedownloader.cf';
+
+app.setAppUserModelId(process.execPath);
 
 autoUpdater.autoDownload = false;
 var x = setInterval(() => {
@@ -64,11 +66,11 @@ function ipcEvents(win) {
         win.setProgressBar(-1);
         win.webContents.send("downloaded", episode);
     }
+    
     const download = new DownloadService(BrowserWindow, callback, downloaded, BASE_URL);
-
     autoUpdater.on('update-available', (event) => {
+        new Notification({ /* icon: __dirname + "/images/icon.png", */ title: "Nouvelle version", body: "Une nouvelle version de l'application est disponible !" }).show()
         win.webContents.send("newVersion");
-
     });
 
     autoUpdater.on('download-progress', (progressObj) => {
