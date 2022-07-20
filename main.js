@@ -1,4 +1,4 @@
-const { shell, session, Notification, dialog, app, BrowserWindow, ipcMain } = require("electron");
+const { shell, session, Notification, dialog, app, BrowserWindow, ipcMain, nativeTheme } = require("electron");
 const { autoUpdater } = require("electron-updater")
 const fs = require('fs');
 const DownloadService = require('./download');
@@ -30,7 +30,7 @@ if (!fs.existsSync(app.getPath("userData") + '/config.json')) {
     }
     fs.writeFileSync(app.getPath("userData") + '/config.json', '{ "id": "' + id + '" }');
 }
-const config = JSON.parse(fs.readFileSync(app.getPath("userData") + '/config.json'));
+var config = JSON.parse(fs.readFileSync(app.getPath("userData") + '/config.json'));
 
 const createWindow = async () => {
     if (config.adminToken) {
@@ -38,20 +38,32 @@ const createWindow = async () => {
     }
     await session.defaultSession.cookies.set({ url: BASE_URL, name: 'application', value: 'true' });
     await session.defaultSession.cookies.set({ url: BASE_URL, name: 'id', value: config.id });
+    if (config.theme) {
+        await session.defaultSession.cookies.set({ url: BASE_URL, name: 'theme', value: config.theme });
+    }
+    var backgroundColor = nativeTheme.shouldUseDarkColors ? "#121212" : "#fafafa";
+    if (config.theme === "light") {
+        backgroundColor = "#fafafa";
+    } else if (config.theme === "dark") {
+        backgroundColor = "#121212";
+    }
     const win = new BrowserWindow({
         title: "Anime Downloader",
         icon: __dirname + "/images/icon.jpg",
         autoHideMenuBar: true,
         width: 800,
         height: 600,
+        frame: false,
+        backgroundColor,
         webPreferences: {
             contextIsolation: false,
-            nodeIntegration: true
+            nodeIntegration: true,
+            enableRemoteModule: true
         }
     });
+    win.maximize();
     // setupPushReceiver(win.webContents);
     win.loadURL(BASE_URL);
-    win.maximize();
     ipcEvents(win);
 }
 
@@ -69,7 +81,11 @@ function ipcEvents(win) {
     
     const download = new DownloadService(BrowserWindow, callback, downloaded, BASE_URL);
     autoUpdater.on('update-available', (event) => {
-        new Notification({ /* icon: __dirname + "/images/icon.png", */ title: "Nouvelle version", body: "Une nouvelle version de l'application est disponible !" }).show()
+        new Notification({
+            // icon: __dirname + "/images/icon.png",
+            title: "Nouvelle version",
+            body: "Une nouvelle version de l'application est disponible !",
+        }).show();
         win.webContents.send("newVersion");
     });
 
@@ -112,6 +128,38 @@ function ipcEvents(win) {
         }
         download.addDownloads(episodes, path);
         win.webContents.send("downloads", download.downloads);
+    });
+
+    ipcMain.on("theme", (event, theme) => {
+        config.theme = theme;
+        fs.writeFileSync(app.getPath("userData") + '/config.json', JSON.stringify(config));
+        var backgroundColor = nativeTheme.shouldUseDarkColors ? "#121212" : "#fafafa";
+        if (config.theme === "light") {
+            backgroundColor = "#fafafa";
+        } else if (config.theme === "dark") {
+            backgroundColor = "#121212";
+        }
+        win.setBackgroundColor(backgroundColor);
+    });
+
+    ipcMain.on("minimize", () => {
+        win.minimize();
+    });
+
+    ipcMain.on("maximize", () => {
+        win.maximize();
+    });
+
+    ipcMain.on("unmaximize", () => {
+        win.unmaximize();
+    });
+
+    win.on("maximize", () => {
+        win.webContents.send("maximize");
+    });
+
+    win.on("unmaximize", () => {
+        win.webContents.send("unmaximize");
     });
 
     ipcMain.handle("getthumbnail", async (event, link) => {
