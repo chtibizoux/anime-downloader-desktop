@@ -23,12 +23,7 @@ autoUpdater.on('error', message => {
 });
 
 if (!fs.existsSync(app.getPath("userData") + '/config.json')) {
-    var id = "";
-    var letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRstUVWXYZ1234567890";
-    for (let i = 0; i < 20; i++) {
-        id += letters[Math.floor(Math.random() * (letters.length - 1))];
-    }
-    fs.writeFileSync(app.getPath("userData") + '/config.json', '{ "id": "' + id + '" }');
+    fs.writeFileSync(app.getPath("userData") + '/config.json', '{}');
 }
 var config = JSON.parse(fs.readFileSync(app.getPath("userData") + '/config.json'));
 
@@ -41,6 +36,12 @@ const createWindow = async () => {
     if (config.theme) {
         await session.defaultSession.cookies.set({ url: BASE_URL, name: 'theme', value: config.theme });
     }
+    session.defaultSession.cookies.addListener("changed", (event, cookie) => {
+        if (cookie.name === "id") {
+            config.id = cookie.value;
+            fs.writeFileSync(app.getPath("userData") + '/config.json', JSON.stringify(config));
+        }
+    });
     var backgroundColor = nativeTheme.shouldUseDarkColors ? "#121212" : "#fafafa";
     if (config.theme === "light") {
         backgroundColor = "#fafafa";
