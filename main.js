@@ -40,6 +40,7 @@ autoUpdater.on('update-available', (event) => {
         body: "Une nouvelle version de l'application est disponible !",
     });
     notification.on("click", () => {
+        notification.close();
         if (!isDownloading) {
             isDownloading = true;
             autoUpdater.downloadUpdate();
@@ -77,6 +78,7 @@ function onNotification({ notification: payload, persistentId }) {
             body: payload.notification.body,
         });
         notification.on("click", () => {
+            notification.close();
             console.log('Notification clicked');
             if (mainWindow) {
                 mainWindow.loadURL(BASE_URL + payload.notification.click_action);
