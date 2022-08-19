@@ -17,6 +17,8 @@ var mainWindow = null;
 
 app.setAppUserModelId(process.execPath);
 
+var isDownloading = false;
+
 autoUpdater.autoDownload = false;
 
 var x = setInterval(() => {
@@ -33,11 +35,17 @@ autoUpdater.on('error', message => {
 });
 
 autoUpdater.on('update-available', (event) => {
-    new Notification({
-        // icon: __dirname + "/images/icon.png",
+    const notification = new Notification({
         title: "Nouvelle version",
         body: "Une nouvelle version de l'application est disponible !",
-    }).show();
+    });
+    notification.on("click", () => {
+        if (!isDownloading) {
+            isDownloading = true;
+            autoUpdater.downloadUpdate();
+        }
+    });
+    notification.show();
     if (mainWindow) {
         mainWindow.webContents.send("newVersion");
     }
@@ -160,7 +168,10 @@ ipcMain.on("getdownloads", () => {
 });
 
 ipcMain.on("downloadNewVersion", () => {
-    autoUpdater.downloadUpdate();
+    if (!isDownloading) {
+        isDownloading = true;
+        autoUpdater.downloadUpdate();
+    }
 });
 
 ipcMain.on("theme", (_, theme) => {
